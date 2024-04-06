@@ -1,18 +1,18 @@
 # timelapse.nvim
-Timelapse-like effect in neovim  
-if you ever watch [one](https://www.youtube.com/watch?v=vkUwT9U1GzA) of bisqwit's videos you know what i mean  
+Timelapse-like effect in neovim
+if you ever watch [one](https://www.youtube.com/watch?v=vkUwT9U1GzA) of bisqwit's videos you know what i mean
 The effect that i want is not quite achieved yet
 
 ## Instalation
-Use your favorite plugin manager, for example:  
+Use your favorite plugin manager, for example:
 ### [vim-plug](https://github.com/junegunn/vim-plug)
 ```vim
 call plug#begin()
 
-Plug 'TRENWAR/timelapse.nvim'
+Plug 'fkys/timelapse.nvim'
 
 call plug#end()
-```  
+```
 ## Usage
 ```haskell
 :Timelapse <delay_ms>
