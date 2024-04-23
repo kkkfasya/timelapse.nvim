@@ -14,9 +14,10 @@ Plug 'fkys/timelapse.nvim'
 call plug#end()
 ```
 ## Usage
-```haskell
-:Timelapse <delay_ms>
-e.g :Timelapse 300
+```Haskell
+:Timelapse <delay_ms || boolean>
+e.g :Timelapse 300 -- will print automatically with 300ms delay
+e.g :Timelapse true -- will print each time any key is pressed
 ```
 
 > shoutout to ChatGPT yo, couldn't made it without you cuz i was too lazy to read the docs
