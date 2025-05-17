@@ -12,8 +12,18 @@ Plug 'kkkfasya/timelapse.nvim'
 
 call plug#end()
 ```
+
+### [lazy.nvim](https://github.com/folke/lazy.nvim)
+```lua
+{
+  "kkkfasya/timelapse.nvim",
+  lazy = true,
+  cmd = { "Timelapse" }
+},
+
+```
 ## Usage
-```Lua
+```lua
 :Timelapse -- will use default delay (30ms)
 
 :Timelapse <delay_ms>
