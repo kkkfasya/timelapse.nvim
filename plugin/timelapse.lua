@@ -1,6 +1,5 @@
--- TODO: add pause feature
 if vim.fn.has("nvim-0.7.0") == 0 then
-	vim.api.nvim_err_writeln("timelapse.nvim requires at least nvim-0.7.0.1")
+	vim.api.nvim_err_writeln("timelapse.nvim requires at least nvim-0.7.0")
 	return
 end
 
@@ -9,52 +8,126 @@ local function get_current_buffer()
 	return table.concat(content, "\n")
 end
 
+local active_session = nil
+
+local function stop_active_session()
+	if active_session then
+		active_session.is_running = false
+		active_session = nil
+	end
+end
+
+local function play_next()
+	if not active_session or not active_session.is_running then
+		return
+	end
+
+	if active_session.paused then
+		return
+	end
+
+	if not vim.api.nvim_buf_is_valid(active_session.buf) then
+		stop_active_session()
+		return
+	end
+
+	if active_session.idx > #active_session.chars then
+		vim.api.nvim_buf_set_option(active_session.buf, "modifiable", false)
+		stop_active_session()
+		return
+	end
+
+	local char = active_session.chars[active_session.idx]
+	active_session.idx = active_session.idx + 1
+
+	if char == "\n" then
+		active_session.current_line = ""
+		active_session.cursor_row = active_session.cursor_row + 1
+		active_session.cursor_col = 0
+		vim.api.nvim_buf_set_lines(active_session.buf, -1, -1, false, { active_session.current_line })
+	else
+		active_session.current_line = active_session.current_line .. char
+		active_session.cursor_col = #active_session.current_line
+		vim.api.nvim_buf_set_lines(active_session.buf, -2, -1, false, { active_session.current_line })
+	end
+
+	local win = vim.fn.bufwinid(active_session.buf)
+	if win ~= -1 then
+		local col = math.max(0, active_session.cursor_col - 1)
+		pcall(vim.api.nvim_win_set_cursor, win, { active_session.cursor_row, col })
+	end
+
+	vim.api.nvim_command("redraw")
+
+	vim.defer_fn(play_next, active_session.delay)
+end
+
+local function toggle_pause()
+	if not active_session then
+		return
+	end
+	active_session.paused = not active_session.paused
+	if active_session.paused then
+		print("Timelapse Paused. Press Space/p to resume. Press q/<Esc> to quit.")
+	else
+		print("Timelapse Resumed.")
+		play_next()
+	end
+end
+
 local function write_animation(text, buf, filetype, delay)
-	-- Make new scratch buffer to scratch them texts
+	stop_active_session()
+
 	vim.api.nvim_command("buffer " .. buf)
 	vim.api.nvim_buf_set_option(buf, "filetype", filetype)
 	vim.api.nvim_buf_set_option(buf, "buftype", "nofile")
 	vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
 	vim.api.nvim_buf_set_option(buf, "swapfile", false)
 
-	vim.api.nvim_buf_set_keymap(buf, "n", "q", ":q!<CR>", { noremap = true, silent = true })
-	vim.api.nvim_buf_set_keymap(buf, "n", "<Esc>", ":q!<CR>", { noremap = true, silent = true })
+	local opts = { buffer = buf, silent = true }
+	vim.keymap.set("n", "q", function()
+		stop_active_session()
+		vim.api.nvim_command("bdelete!")
+	end, opts)
+
+	vim.keymap.set("n", "<Esc>", function()
+		stop_active_session()
+		vim.api.nvim_command("bdelete!")
+	end, opts)
+
+	vim.keymap.set("n", "<Space>", toggle_pause, opts)
+	vim.keymap.set("n", "p", toggle_pause, opts)
 
 	delay = delay or 30
 
-	local cursor_row = 1
-	local cursor_col = 1
-	local current_line = ""
-
-	for i = 1, #text do
-		local char = text:sub(i, i)
-		if char == "\n" then
-			current_line = ""
-			cursor_row = cursor_row + 1
-			vim.api.nvim_buf_set_lines(buf, -1, -1, false, { current_line })
-		else
-			current_line = current_line .. char
-			cursor_col = cursor_col + 1
-			vim.api.nvim_buf_set_lines(buf, -2, -1, false, { current_line })
-		end
-		vim.api.nvim_win_set_cursor(0, { cursor_row, cursor_col - 1 }) -- Yeah fuck lua 1-based index
-		vim.api.nvim_command("redraw")
-		vim.api.nvim_command("sleep " .. delay .. "m")
+	local chars = {}
+	for char in text:gmatch("[%z\1-\127\194-\244][\128-\191]*") do
+		table.insert(chars, char)
 	end
-	vim.api.nvim_buf_set_option(buf, "modifiable", false) -- modifiable enable sufferable
+
+	active_session = {
+		chars = chars,
+		idx = 1,
+		buf = buf,
+		delay = delay,
+		paused = false,
+		is_running = true,
+		cursor_row = 1,
+		cursor_col = 0,
+		current_line = "",
+	}
+
+	play_next()
 end
 
 local function timelapse(opts)
 	local delay = nil
+	if opts.args ~= "" then
+		delay = tonumber(opts.args)
+	end
 	local buf = vim.api.nvim_create_buf(false, true)
 	local filetype = vim.bo.filetype
 	local text = get_current_buffer()
-	if opts.args ~= "" then
-		delay = tonumber(opts.args)
-		if delay == nil then
-			write_animation(text, buf, filetype, nil)
-		end
-	end
 	write_animation(text, buf, filetype, delay)
 end
 
