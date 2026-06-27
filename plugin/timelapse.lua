@@ -55,6 +55,9 @@ local function play_next()
 	if win ~= -1 then
 		local col = math.max(0, active_session.cursor_col - 1)
 		pcall(vim.api.nvim_win_set_cursor, win, { active_session.cursor_row, col })
+		pcall(vim.api.nvim_win_call, win, function()
+			vim.api.nvim_command("normal! zz")
+		end)
 	end
 
 	vim.api.nvim_command("redraw")
