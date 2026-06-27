@@ -134,4 +134,44 @@ local function timelapse(opts)
 	write_animation(text, buf, filetype, delay)
 end
 
+local function ftimelapse(opts)
+	local delay = nil
+	local filepath = nil
+
+	local args = {}
+	for arg in opts.args:gmatch("%S+") do
+		table.insert(args, arg)
+	end
+
+	if #args == 0 then
+		vim.api.nvim_err_writeln("FTimelapse requires a file path argument")
+		return
+	end
+
+	filepath = args[1]
+	if args[2] then
+		delay = tonumber(args[2])
+	end
+
+	filepath = vim.fn.expand(filepath)
+	if vim.fn.filereadable(filepath) == 0 then
+		vim.api.nvim_err_writeln("FTimelapse: cannot read file: " .. filepath)
+		return
+	end
+
+	local lines = vim.fn.readfile(filepath)
+	local text = table.concat(lines, "\n")
+
+	local filetype = vim.filetype.match({ filename = filepath }) or ""
+
+	local buf = vim.api.nvim_create_buf(false, true)
+	write_animation(text, buf, filetype, delay)
+end
+
+vim.api.nvim_create_user_command(
+	"FTimelapse",
+	ftimelapse,
+	{ nargs = "+", desc = "Timelapse of a given file", complete = "file" }
+)
+
 vim.api.nvim_create_user_command("Timelapse", timelapse, { nargs = "?", desc = "Make a timelapse-like effects" })
