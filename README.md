@@ -29,7 +29,9 @@ call plug#end()
 :Timelapse <delay_ms>
 e.g :Timelapse 10 -- 10ms delay for each char
 ```
-Press ```q``` or ```<ESC>``` to exit  
-To exit while animation still running, ```Ctrl + C``` then press any key above
+
+### Controls (Normal Mode)
+- `q` or `<ESC>`: Close the timelapse buffer and exit (can be pressed at any time).
+- `<Space>` or `p`: Toggle pause / resume.
 
 > shoutout to ChatGPT yo, couldn't made it without you cuz i was too lazy to read the docs
